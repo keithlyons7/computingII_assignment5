@@ -9,100 +9,80 @@
 
 .section .text
 Main:
-    MOV R6, #1 @ ; Initialize round counter
-
-    @; Enable GPIOE and GPIOA clocks
+    @ Enable GPIOE and GPIOA clocks
     LDR R0, =RCC_AHBENR
     LDR R1, [R0]
-    ORR R1, R1, #(1 << RCC_AHBENR_GPIOEEN) @; Enable GPIOE clock
-    ORR R1, R1, #(1 << RCC_AHBENR_GPIOAEN) @; Enable GPIOA clock
+    ORR R1, R1, #(1 << RCC_AHBENR_GPIOEEN)  @ Enable GPIOE clock
+    ORR R1, R1, #(1 << RCC_AHBENR_GPIOAEN)  @ Enable GPIOA clock
     STR R1, [R0]
 
-    @; Configure GPIOE pins for output (for LEDs)
+    @ Configure GPIOE pins for output (for LEDs)
     LDR R0, =GPIOE_MODER
-    MOV R1, #0x55555555@ ; Set pins 8-15 as output
+    MOV R1, #0x55555555  @ Set all pins as output, adjust the mask as needed
     STR R1, [R0]
 
     B game_loop
 
 game_loop:
-    MOV R3, #1  @; Start with the first LED
-    MOV R7, #10000
-    MUL R5, R6, R7
-    LDR R4, =DELAY_VALUE
-    SUB R4, R4, R5
+    MOV R3, #1  @ Start with the first LED
 
 sequence_loop:
-    LSL R2, R3, #8
+    LSL R2, R3, #8  @ Shift to the correct LED position, adjust shift as per LED mapping
     LDR R0, =GPIOE_ODR
-    STR R2, [R0]  @; Light up the current LED
+    STR R2, [R0]  @ Light up the current LED
 
-   @ ; Delay loop
-    MOV R5, R4
+    @ Delay loop to keep the LED on for a second
+    LDR R5, =100000  @ Approximately one second; adjust this value based on clock speed
 delay_loop:
     SUBS R5, R5, #1
     BNE delay_loop
 
-   @ ; Check button press
+    @ Turn off the LED before moving to the next one
+    MOV R2, #0
+    STR R2, [R0]
+
+    @ Check if reached middle LED (assuming LD5 is the middle)
+    CMP R3, #25  @ Adjust this value to your middle LED's number
+    BEQ game_over
+
+    @ Check button press
     LDR R0, =GPIOA_IDR
     LDR R1, [R0]
     TST R1, #1
     BNE button_pressed
 
-   @ ; Check if reached LD10
-    CMP R3, #25 @ ; Adjust according to your configuration
-    BEQ game_over
-
-    @; Move to next LED
+    @ Increment to next LED
     ADD R3, R3, #1
     B sequence_loop
 
 button_pressed:
-    ADD R6, R6, #1
-    CMP R6, #4
-    BEQ final_win
-    MOV R3, #1 @ ; Reset to first LED
-    B sequence_loop
-
-final_win:
-    @; All LEDs turn on with green light if available
-    MOV R2, #0x00FF0000  @; Adjust mask for green LEDs
+    @ Flash LEDs 5 and 35 if available
+    LDR R0, =GPIOE_ODR
+    MOV R2, #(1 << 5) | (1 << 35)  @ Set the specific LEDs, adjust mask as needed
     STR R2, [R0]
-    BL long_delay
+    BL delay  @ Show for a short period
     B reset_game
 
 game_over:
-    MOV R5, #5  @; Flash five times
-flash_all_leds:
+    @ End game because middle LED was reached without button press
     LDR R0, =GPIOE_ODR
-    MOV R2, #ALL_LEDS_MASK
-    STR R2, [R0]  @; Turn all LEDs on
-    BL delay
+    MOV R2, #ALL_LEDS_MASK  @ Flash all LEDs
+    STR R2, [R0]
+    BL delay  @ Flash delay
     MOV R2, #0
-    STR R2, [R0] @ ; Turn all LEDs off
-    BL delay
-    SUBS R5, R5, #1
-    BNE flash_all_leds
-
+    STR R2, [R0]
     B reset_game
 
 reset_game:
+    @ Reset the game logic and restart
     LDR R0, =GPIOE_ODR
     MOV R1, #0
-    STR R1, [R0]  @; All LEDs off
-    MOV R6, #1  @; Reset round counter
-    B Main  @; Restart the game
+    STR R1, [R0]  @ Turn all LEDs off
+    B Main  @ Restart the game
 
 delay:
-    LDR R5, =DELAY_VALUE
+    LDR R5, =100000  @ Some delay; adjust according to system clock
 short_delay_loop:
     SUBS R5, R5, #1
     BNE short_delay_loop
-    BX LR
-
-long_delay:
-    LDR R5, =300000 @ ; Longer delay value
-long_delay_loop:
-    SUBS R5, R5, #1
-    BNE long_delay_loop
     BX LR
