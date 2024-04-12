@@ -1,0 +1,171 @@
+   1              	# 0 "./src/blinky.s"
+   2              	# 1 "U:\\SCU11022\\2510-blinky-1//"
+   0              	
+   0              	
+   0              	
+   1              	.syntax unified
+   2              	.cpu cortex-m4
+   3              	.fpu softvfp
+   4              	.thumb
+   5              	
+   6              	.global Main
+   7              	
+   8              	.include "./src/definitions.s"
+   1              	@; Constants for game logic
+   2              	.equ DELAY_VALUE, 300000      @ ; Adjust for suitable speed of LED sequence
+   3              	.equ ALL_LEDS_MASK, 0xFF00        @; Assuming LEDs are connected to pins 8-15 of GPIOE
+   4              	.equ MIDDLE_LED_VALUE, 0x0800    @ ; Assuming middle LED is at GPIOE pin 11 (modify as needed)
+   5              	.equ MAX_LED_VALUE, 0x8000       @ ; Assuming the last LED is on GPIOE pin 15
+   6              	.equ GPIOE_BASE, 0x48001000      @ ; Base address for GPIOE
+   7              	.equ GPIOA_BASE, 0x48000000      @ ; Base address for GPIOA
+   8              	.equ RCC_AHBENR, 0x40021014      @ ; RCC AHB peripheral clock enable register
+   9              	.equ GPIOE_MODER, GPIOE_BASE + 0x00@ ; GPIOE mode register
+  10              	.equ GPIOE_ODR, GPIOE_BASE + 0x14 @; GPIOE output data register
+  11              	.equ GPIOA_IDR, GPIOA_BASE + 0x10 @@; GPIOA input data register
+  12              	
+  13              	@; Bit positions for enabling GPIOE and GPIOA clock in RCC_AHBENR register
+  14              	.equ RCC_AHBENR_GPIOEEN, 21
+  15              	.equ RCC_AHBENR_GPIOAEN, 17
+  16              	
+  17              	@; Adjust the following values as per your board's specific configuration
+  18              	.equ BUTTON_PIN, 0               @ ; Assuming the button is connected to GPIOA pin 0
+  19              	.equ LED_START_PIN, 8            @ ; Assuming LEDs start from GPIOE pin 8
+  20              	.equ LD10_PIN, 13...
+   9              	
+  10              	.section .text
+  11              	Main:
+  12 0000 4FF00106 	    MOV R6, #1 @ ; Initialize round counter
+  13              	
+  14              	    @; Enable GPIOE and GPIOA clocks
+  15 0004 2948     	    LDR R0, =RCC_AHBENR
+  16 0006 0168     	    LDR R1, [R0]
+  17 0008 41F40011 	    ORR R1, R1, #(1 << RCC_AHBENR_GPIOEEN) @; Enable GPIOE clock
+  18 000c 41F40031 	    ORR R1, R1, #(1 << RCC_AHBENR_GPIOAEN) @; Enable GPIOA clock
+  19 0010 0160     	    STR R1, [R0]
+  20              	
+  21              	    @; Configure GPIOE pins for output (for LEDs)
+  22 0012 2748     	    LDR R0, =GPIOE_MODER
+  23 0014 4FF05531 	    MOV R1, #0x55555555@ ; Set pins 8-15 as output
+  24 0018 0160     	    STR R1, [R0]
+  25              	
+  26 001a FFE7     	    B game_loop
+  27              	
+  28              	game_loop:
+  29 001c 4FF00103 	    MOV R3, #1  @; Start with the first LED
+  30 0020 42F21077 	    MOV R7, #10000
+  31 0024 06FB07F5 	    MUL R5, R6, R7
+  32 0028 224C     	    LDR R4, =DELAY_VALUE
+  33 002a A4EB0504 	    SUB R4, R4, R5
+  34              	
+  35              	sequence_loop:
+  36 002e 4FEA0322 	    LSL R2, R3, #8
+  37 0032 2148     	    LDR R0, =GPIOE_ODR
+  38 0034 0260     	    STR R2, [R0]  @; Light up the current LED
+  39              	
+  40              	   @ ; Delay loop
+  41 0036 2546     	    MOV R5, R4
+  42              	delay_loop:
+  43 0038 013D     	    SUBS R5, R5, #1
+  44 003a FDD1     	    BNE delay_loop
+  45              	
+  46              	   @ ; Check button press
+  47 003c 1F48     	    LDR R0, =GPIOA_IDR
+  48 003e 0168     	    LDR R1, [R0]
+  49 0040 11F0010F 	    TST R1, #1
+  50 0044 04D1     	    BNE button_pressed
+  51              	
+  52              	   @ ; Check if reached LD10
+  53 0046 192B     	    CMP R3, #25 @ ; Adjust according to your configuration
+  54 0048 0FD0     	    BEQ game_over
+  55              	
+  56              	    @; Move to next LED
+  57 004a 03F10103 	    ADD R3, R3, #1
+  58 004e EEE7     	    B sequence_loop
+  59              	
+  60              	button_pressed:
+  61 0050 06F10106 	    ADD R6, R6, #1
+  62 0054 042E     	    CMP R6, #4
+  63 0056 02D0     	    BEQ final_win
+  64 0058 4FF00103 	    MOV R3, #1 @ ; Reset to first LED
+  65 005c E7E7     	    B sequence_loop
+  66              	
+  67              	final_win:
+  68              	    @; All LEDs turn on with green light if available
+  69 005e 4FF47F02 	    MOV R2, #0x00FF0000  @; Adjust mask for green LEDs
+  70 0062 0260     	    STR R2, [R0]
+  71 0064 00F01DF8 	    BL long_delay
+  72 0068 0FE0     	    B reset_game
+  73              	
+  74              	game_over:
+  75 006a 4FF00505 	    MOV R5, #5  @; Flash five times
+  76              	flash_all_leds:
+  77 006e 1248     	    LDR R0, =GPIOE_ODR
+  78 0070 4FF47F42 	    MOV R2, #ALL_LEDS_MASK
+  79 0074 0260     	    STR R2, [R0]  @; Turn all LEDs on
+  80 0076 00F010F8 	    BL delay
+  81 007a 4FF00002 	    MOV R2, #0
+  82 007e 0260     	    STR R2, [R0] @ ; Turn all LEDs off
+  83 0080 00F00BF8 	    BL delay
+  84 0084 013D     	    SUBS R5, R5, #1
+  85 0086 F2D1     	    BNE flash_all_leds
+  86              	
+  87 0088 FFE7     	    B reset_game
+  88              	
+  89              	reset_game:
+  90 008a 0B48     	    LDR R0, =GPIOE_ODR
+  91 008c 4FF00001 	    MOV R1, #0
+  92 0090 0160     	    STR R1, [R0]  @; All LEDs off
+  93 0092 4FF00106 	    MOV R6, #1  @; Reset round counter
+  94 0096 FFF7FEBF 	    B Main  @; Restart the game
+  95              	
+  96              	delay:
+  97 009a 064D     	    LDR R5, =DELAY_VALUE
+  98              	short_delay_loop:
+  99 009c 013D     	    SUBS R5, R5, #1
+ 100 009e FDD1     	    BNE short_delay_loop
+ 101 00a0 7047     	    BX LR
+ 102              	
+ 103              	long_delay:
+ 104 00a2 044D     	    LDR R5, =300000 @ ; Longer delay value
+ 105              	long_delay_loop:
+ 106 00a4 013D     	    SUBS R5, R5, #1
+ 107 00a6 FDD1     	    BNE long_delay_loop
+ 108 00a8 70470000 	    BX LR
+ 108      14100240 
+ 108      00100048 
+ 108      E0930400 
+ 108      14100048 
+DEFINED SYMBOLS
+      ./src/blinky.s:11     .text:00000000 Main
+ ./src/definitions.s:2      *ABS*:000493e0 DELAY_VALUE
+ ./src/definitions.s:3      *ABS*:0000ff00 ALL_LEDS_MASK
+ ./src/definitions.s:4      *ABS*:00000800 MIDDLE_LED_VALUE
+ ./src/definitions.s:5      *ABS*:00008000 MAX_LED_VALUE
+ ./src/definitions.s:6      *ABS*:48001000 GPIOE_BASE
+ ./src/definitions.s:7      *ABS*:48000000 GPIOA_BASE
+ ./src/definitions.s:8      *ABS*:40021014 RCC_AHBENR
+ ./src/definitions.s:9      *ABS*:48001000 GPIOE_MODER
+ ./src/definitions.s:10     *ABS*:48001014 GPIOE_ODR
+ ./src/definitions.s:11     *ABS*:48000010 GPIOA_IDR
+ ./src/definitions.s:14     *ABS*:00000015 RCC_AHBENR_GPIOEEN
+ ./src/definitions.s:15     *ABS*:00000011 RCC_AHBENR_GPIOAEN
+ ./src/definitions.s:18     *ABS*:00000000 BUTTON_PIN
+ ./src/definitions.s:19     *ABS*:00000008 LED_START_PIN
+ ./src/definitions.s:20     *ABS*:0000000d LD10_PIN
+      ./src/blinky.s:12     .text:00000000 $t
+      ./src/blinky.s:28     .text:0000001c game_loop
+      ./src/blinky.s:35     .text:0000002e sequence_loop
+      ./src/blinky.s:42     .text:00000038 delay_loop
+      ./src/blinky.s:60     .text:00000050 button_pressed
+      ./src/blinky.s:74     .text:0000006a game_over
+      ./src/blinky.s:67     .text:0000005e final_win
+      ./src/blinky.s:103    .text:000000a2 long_delay
+      ./src/blinky.s:89     .text:0000008a reset_game
+      ./src/blinky.s:76     .text:0000006e flash_all_leds
+      ./src/blinky.s:96     .text:0000009a delay
+      ./src/blinky.s:98     .text:0000009c short_delay_loop
+      ./src/blinky.s:105    .text:000000a4 long_delay_loop
+      ./src/blinky.s:108    .text:000000aa $d
+      ./src/blinky.s:108    .text:000000ac $d
+
+NO UNDEFINED SYMBOLS

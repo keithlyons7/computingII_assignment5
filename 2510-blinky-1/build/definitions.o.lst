@@ -1,0 +1,43 @@
+   1              	# 0 "./src/definitions.s"
+   2              	# 1 "U:\\SCU11022\\2510-blinky-1//"
+   0              	
+   0              	
+   0              	
+   1              	@; Constants for game logic
+   2              	.equ DELAY_VALUE, 300000      @ ; Adjust for suitable speed of LED sequence
+   3              	.equ ALL_LEDS_MASK, 0xFF00        @; Assuming LEDs are connected to pins 8-15 of GPIOE
+   4              	.equ MIDDLE_LED_VALUE, 0x0800    @ ; Assuming middle LED is at GPIOE pin 11 (modify as needed)
+   5              	.equ MAX_LED_VALUE, 0x8000       @ ; Assuming the last LED is on GPIOE pin 15
+   6              	.equ GPIOE_BASE, 0x48001000      @ ; Base address for GPIOE
+   7              	.equ GPIOA_BASE, 0x48000000      @ ; Base address for GPIOA
+   8              	.equ RCC_AHBENR, 0x40021014      @ ; RCC AHB peripheral clock enable register
+   9              	.equ GPIOE_MODER, GPIOE_BASE + 0x00@ ; GPIOE mode register
+  10              	.equ GPIOE_ODR, GPIOE_BASE + 0x14 @; GPIOE output data register
+  11              	.equ GPIOA_IDR, GPIOA_BASE + 0x10 @@; GPIOA input data register
+  12              	
+  13              	@; Bit positions for enabling GPIOE and GPIOA clock in RCC_AHBENR register
+  14              	.equ RCC_AHBENR_GPIOEEN, 21
+  15              	.equ RCC_AHBENR_GPIOAEN, 17
+  16              	
+  17              	@; Adjust the following values as per your board's specific configuration
+  18              	.equ BUTTON_PIN, 0               @ ; Assuming the button is connected to GPIOA pin 0
+  19              	.equ LED_START_PIN, 8            @ ; Assuming LEDs start from GPIOE pin 8
+  20              	.equ LD10_PIN, 13...
+DEFINED SYMBOLS
+ ./src/definitions.s:2      *ABS*:000493e0 DELAY_VALUE
+ ./src/definitions.s:3      *ABS*:0000ff00 ALL_LEDS_MASK
+ ./src/definitions.s:4      *ABS*:00000800 MIDDLE_LED_VALUE
+ ./src/definitions.s:5      *ABS*:00008000 MAX_LED_VALUE
+ ./src/definitions.s:6      *ABS*:48001000 GPIOE_BASE
+ ./src/definitions.s:7      *ABS*:48000000 GPIOA_BASE
+ ./src/definitions.s:8      *ABS*:40021014 RCC_AHBENR
+ ./src/definitions.s:9      *ABS*:48001000 GPIOE_MODER
+ ./src/definitions.s:10     *ABS*:48001014 GPIOE_ODR
+ ./src/definitions.s:11     *ABS*:48000010 GPIOA_IDR
+ ./src/definitions.s:14     *ABS*:00000015 RCC_AHBENR_GPIOEEN
+ ./src/definitions.s:15     *ABS*:00000011 RCC_AHBENR_GPIOAEN
+ ./src/definitions.s:18     *ABS*:00000000 BUTTON_PIN
+ ./src/definitions.s:19     *ABS*:00000008 LED_START_PIN
+ ./src/definitions.s:20     *ABS*:0000000d LD10_PIN
+
+NO UNDEFINED SYMBOLS
