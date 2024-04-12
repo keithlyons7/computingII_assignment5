@@ -1,19 +1,45 @@
-@; Constants for game logic
-.equ DELAY_VALUE, 100000         @ ; Adjust for suitable speed of LED sequence
-.equ ALL_LEDS_MASK, 0xFF00        @; Assuming LEDs are connected to pins 8-15 of GPIOE
-.equ MIDDLE_LED_VALUE, 0x0800    @ ; Assuming middle LED is at GPIOE pin 11 (modify as needed)
-.equ MAX_LED_VALUE, 0x8000       @ ; Assuming the last LED is on GPIOE pin 15
-.equ GPIOE_BASE, 0x48001000      @ ; Base address for GPIOE
-.equ GPIOA_BASE, 0x48000000      @ ; Base address for GPIOA
-.equ RCC_AHBENR, 0x40021014      @ ; RCC AHB peripheral clock enable register
-.equ GPIOE_MODER, GPIOE_BASE + 0x00@ ; GPIOE mode register
-.equ GPIOE_ODR, GPIOE_BASE + 0x14 @; GPIOE output data register
-.equ GPIOA_IDR, GPIOA_BASE + 0x10 @@; GPIOA input data register
+  .equ    GPIOE_BASE, 0x48001000
+  .equ    GPIOE_MODER, (GPIOE_BASE + 0x00)
+  .equ    GPIOE_OTYPER, (GPIOE_BASE + 0x04)
+  .equ    GPIOE_OSPEEDR, (GPIOE_BASE + 0x08)
+  .equ    GPIOE_PUPDR, (GPIOE_BASE + 0x0C)
+  .equ    GPIOE_IDR, (GPIOE_BASE + 0x10)
+  .equ    GPIOE_ODR, (GPIOE_BASE + 0x14)
+  .equ    GPIOE_BSRR, (GPIOE_BASE + 0x18)
+  .equ    GPIOE_LCKR, (GPIOE_BASE + 0x1C)
+  .equ    GPIOE_AFRL, (GPIOE_BASE + 0x20)
+  .equ    GPIOE_AFRH, (GPIOE_BASE + 0x24)
 
-@; Bit positions for enabling GPIOE and GPIOA clock in RCC_AHBENR register
-.equ RCC_AHBENR_GPIOEEN, 21
-.equ RCC_AHBENR_GPIOAEN, 17
+  .equ    RCC_BASE, 0x40021000
+  .equ    RCC_AHBENR, (RCC_BASE + 0x14)
+  .equ    RCC_AHBENR_GPIOEEN_BIT, 21
 
-@; Adjust the following values as per your board's specific configuration
-.equ BUTTON_PIN, 0               @ ; Assuming the button is connected to GPIOA pin 0
-.equ LED_START_PIN, 8            @ ; Assuming LEDs start from GPIOE pin 8
+  .equ    SYSTICK_BASE, 0xE000E010
+  .equ    SYSTICK_CSR, (SYSTICK_BASE + 0x00)
+  .equ    SYSTICK_LOAD, (SYSTICK_BASE + 0x04)
+  .equ    SYSTICK_VAL, (SYSTICK_BASE + 0x08)
+
+  .equ    SYSCFG_BASE, (0x40010000)
+  .equ    SYSCFG_EXTIICR1, (SYSCFG_BASE + 0x08)
+
+  .equ    NVIC_ISER, 0xE000E100
+
+  .equ    EXTI_BASE, 0x40010400
+  .equ    EXTI_IMR, (EXTI_BASE + 0x00)
+  .equ    EXTI_RTSR, (EXTI_BASE + 0x08)
+  .equ    EXTI_FTSR, (EXTI_BASE + 0x0C)
+  .equ    EXTI_PR, (EXTI_BASE + 0x14)
+
+  .equ    LD3_PIN, 9
+  .equ    LD4_PIN, 8
+  .equ    LD5_PIN, 10
+  .equ    LD6_PIN, 15
+  .equ    LD7_PIN, 11
+  .equ    LD8_PIN, 14
+  .equ    LD9_PIN, 12
+  .equ    LD10_PIN, 13
+  
+  .equ    SCB_BASE, 0xE000ED00
+  .equ    SCB_ICSR, (SCB_BASE + 0x04)
+  .equ    SCB_ICSR_PENDSTCLR, (1<<25)
+  
